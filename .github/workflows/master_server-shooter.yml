@@ -31,5 +31,5 @@ jobs:
       with:
         app-name: 'server-shooter'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_d20c2ecbb0b3425f9865653344ebda80 }}
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_2c4948f4acb4441d8cafddfaa048a192 }}
         package: .
