@@ -175,23 +175,7 @@ io.on('connection', (socket) => {
 
         for (var r in rooms) {
             const auxRoom = io.sockets.adapter.rooms[r];
-            if (auxRoom) {
-                if (auxRoom.length < 2) { // establesco un limite de usuarios por sala
-                    banRoom = true;
-                    socket.join(r); // unirse a esta sala
-                    // rooms[r] = { id_room: r };
-                    roomGame = r;
-                    players[thisPlayerId].roomGame = roomGame;
-
-                    // mantener al cliente en cola, hasta cumplir la condición
-                    const statusRoom = io.sockets.adapter.rooms[r];
-                    if (statusRoom.length == 2) {
-                        socket.in(roomGame).broadcast.emit('game:start', { message: 'OK' });
-                        socket.emit('game:start', { message: 'OK' });
-                    }
-                    break;
-                }
-            } else {
+            if (!auxRoom) {
                 banRoom = true;
                 socket.join(r); // unirse a esta sala
                 roomGame = r;
@@ -245,7 +229,6 @@ io.on('connection', (socket) => {
             p.status_player = "online";
             await p.save();
         }
-        socket.nickname = data.username;
         players[thisPlayerId].username = data.username;
 
         socket.broadcast.emit('player:online', { id: thisPlayerId, user: data.username });
