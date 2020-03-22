@@ -187,13 +187,15 @@ io.on('connection', (socket) => {
 
             const auxRoom = io.sockets.adapter.rooms[roomGame];
 
-            if (auxRoom.length == 1) // si es el ultimo jugador en la sala
+            if (auxRoom.length <= 1) { // si es el ultimo jugador en la sala
                 roomsCount--; // reducir el numero de salas
+                delete rooms[roomGame];
+            } else {
+                // quitar el prefab del juego a los demas clientes de esa sala
+                socket.in(roomGame).broadcast.emit("PlayerLeavedGame", { id: thisPlayerId });
+            }
 
             socket.leave(roomGame); // salir de la sala
-
-            // quitar el prefab del juego a los demas clientes de esa sala
-            socket.in(roomGame).broadcast.emit("PlayerLeavedGame", { id: thisPlayerId });
 
             roomGame = "";
             players[thisPlayerId].roomGame = "";
@@ -331,18 +333,28 @@ io.on('connection', (socket) => {
     socket.on('disconnect', async function() {
         console.log("player disconnected");
         playersCount--;
+
+        // si se encontraba en una partida primero hay que sacarlo de la sala...
+        if (roomGame != "") {
+            const auxRoom = io.sockets.adapter.rooms[roomGame];
+
+            if (auxRoom.length <= 1) { // si es el ultimo jugador en la sala
+                roomsCount--; // reducir el numero de salas
+                delete rooms[roomGame];
+            } else { // si aun quedan jugadores en la sala
+                // quitar el prefab del juego a los demas clientes de esa sala
+                socket.in(roomGame).broadcast.emit("PlayerLeavedGame", { id: thisPlayerId });
+            }
+
+            socket.leave(roomGame);
+            console.log("<" + thisPlayerId + "> has left the room: " + roomGame);
+            roomGame = "";
+        }
+
         await Player.findOneAndUpdate({ username: players[thisPlayerId].username }, { status_player: "offline" });
         delete players[thisPlayerId];
         socket.broadcast.emit('disconnected', { id: thisPlayerId });
         socket.broadcast.emit('updateTotalPlayers', { nPlayers: playersCount.toString() });
-
-        if (roomGame != "") {
-            console.log("<" + thisPlayerId + "> has left the room: " + roomGame);
-            socket.leave(roomGame);
-            delete rooms[roomGame];
-            roomGame = "";
-            roomsCount--;
-        }
     });
 
     /************************ ****** *** ****** | CHAT | ****** *** ****** ************************/
