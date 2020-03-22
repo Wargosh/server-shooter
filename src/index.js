@@ -89,7 +89,7 @@ var rooms = [];
 
 // generar cajas en posiciones aleatorias
 if (roomsCount == 0) {
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < 100; i++) {
         const idRoom = shortid.generate();
         var room = {
             id_room: idRoom
@@ -173,6 +173,35 @@ io.on('connection', (socket) => {
             }
         }
 
+        if (!banRoom) {
+            for (var r in rooms) {
+                const auxRoom = io.sockets.adapter.rooms[r];
+                if (auxRoom) {
+                    if (auxRoom.length < 2) { // establesco un limite de usuarios por sala
+                        banRoom = true;
+                        socket.join(r); // unirse a esta sala
+                        // rooms[r] = { id_room: r };
+                        roomGame = r;
+                        players[thisPlayerId].roomGame = roomGame;
+
+                        // mantener al cliente en cola, hasta cumplir la condición
+                        const statusRoom = io.sockets.adapter.rooms[r];
+                        if (statusRoom.length == 2) {
+                            socket.in(roomGame).broadcast.emit('game:start', { message: 'OK' });
+                            socket.emit('game:start', { message: 'OK' });
+                        }
+                        break;
+                    }
+                } else {
+                    banRoom = true;
+                    socket.join(r); // unirse a esta sala
+                    roomGame = r;
+                    players[thisPlayerId].roomGame = roomGame;
+                    break;
+                }
+            }
+        }
+
         // crea una nueva sala
         if (!banRoom) { // si no encontro una sala disponible
             const idRoom = shortid.generate();
@@ -191,7 +220,7 @@ io.on('connection', (socket) => {
     // el jugador sale de una sala de juego...
     socket.on('room:leave', function() {
         if (roomGame != "") {
-            // quitar el prefab del juego a los demas clientes de esa sala
+            // notificar a los demas clientes de esa sala
             socket.in(roomGame).broadcast.emit("PlayerLeavedGame", { id: thisPlayerId });
 
             console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has left the room: " + roomGame);
@@ -331,7 +360,6 @@ io.on('connection', (socket) => {
 
     // Cuando un jugador se desconecta
     socket.on('disconnect', async function() {
-        console.log("player disconnected");
         playersCount--;
 
         // si se encontraba en una partida primero hay que sacarlo de la sala...
@@ -350,6 +378,7 @@ io.on('connection', (socket) => {
         delete players[thisPlayerId];
         socket.broadcast.emit('disconnected', { id: thisPlayerId });
         socket.broadcast.emit('updateTotalPlayers', { nPlayers: playersCount.toString() });
+        console.log("player disconnected");
     });
 
     /************************ ****** *** ****** | CHAT | ****** *** ****** ************************/
