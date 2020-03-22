@@ -173,17 +173,6 @@ io.on('connection', (socket) => {
             }
         }
 
-        for (var r in rooms) {
-            const auxRoom = io.sockets.adapter.rooms[r];
-            if (!auxRoom) {
-                banRoom = true;
-                socket.join(r); // unirse a esta sala
-                roomGame = r;
-                players[thisPlayerId].roomGame = roomGame;
-                break;
-            }
-        }
-
         // crea una nueva sala
         if (!banRoom) { // si no encontro una sala disponible
             const idRoom = shortid.generate();
