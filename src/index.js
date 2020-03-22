@@ -142,7 +142,6 @@ io.on('connection', (socket) => {
     }
 
     players[thisPlayerId] = player;
-    console.log("player", player);
 
     socket.emit('connectionEstabilished', { id: thisPlayerId });
 
@@ -155,25 +154,33 @@ io.on('connection', (socket) => {
         var banRoom = false;
         for (var r in rooms) {
             const auxRoom = io.sockets.adapter.rooms[r];
-            if (auxRoom.length < 2) { // establesco un limite de usuarios por sala
+            if (auxRoom) {
+                if (auxRoom.length < 2) { // establesco un limite de usuarios por sala
+                    banRoom = true;
+                    socket.join(r); // unirse a esta sala
+                    // rooms[r] = { id_room: r };
+                    roomGame = r;
+                    players[thisPlayerId].roomGame = roomGame;
+
+                    // mantener al cliente en cola, hasta cumplir la condición
+                    const statusRoom = io.sockets.adapter.rooms[r];
+                    if (statusRoom.length == 2) {
+                        socket.in(roomGame).broadcast.emit('game:start', { message: 'OK' });
+                        socket.emit('game:start', { message: 'OK' });
+                    }
+                    break;
+                }
+            } else {
                 banRoom = true;
                 socket.join(r); // unirse a esta sala
-                // rooms[r] = { id_room: r };
                 roomGame = r;
                 players[thisPlayerId].roomGame = roomGame;
-
-                // mantener al cliente en cola, hasta cumplir la condición
-                const statusRoom = io.sockets.adapter.rooms[r];
-                if (statusRoom.length == 2) {
-                    socket.in(roomGame).broadcast.emit('game:start', { message: 'OK' });
-                    socket.emit('game:start', { message: 'OK' });
-                }
                 break;
             }
         }
 
+        // crea una nueva sala
         if (!banRoom) { // si no encontro una sala disponible
-            // crea una nueva sala
             const idRoom = shortid.generate();
             var room = {
                 id_room: idRoom
