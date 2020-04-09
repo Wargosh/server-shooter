@@ -105,8 +105,8 @@ if (boxesCount == 0) {
         const idBox = shortid.generate();
         var box = {
             id: idBox,
-            posX: helpers.getRandomArbitrary(-50, 50),
-            posY: helpers.getRandomArbitrary(-28, 28)
+            posX: helpers.getRandomArbitrary(-25, 25),
+            posY: helpers.getRandomArbitrary(-25, 25)
         }
         boxes[idBox] = box;
         boxesCount++;
@@ -146,16 +146,13 @@ io.on('connection', (socket) => {
                 if (auxRoom.length < 2) { // establesco un limite de usuarios por sala
                     banRoom = true;
                     socket.join(r); // unirse a esta sala
-                    // rooms[r] = { id_room: r };
                     roomGame = r;
                     players[thisPlayerId].roomGame = roomGame;
 
                     // mantener al cliente en cola, hasta cumplir la condición
                     const statusRoom = io.sockets.adapter.rooms[r];
                     if (statusRoom.length == 2) {
-                        io.to(roomGame).emit('game:start', { message: 'OK' }); // IO ...
-                        //socket.in(roomGame).broadcast.emit('game:start', { message: 'OK' });
-                        //socket.emit('game:start', { message: 'OK' });
+                        io.to(roomGame).emit('game:start', { message: 'OK' });
                     }
                     break;
                 }
@@ -178,6 +175,7 @@ io.on('connection', (socket) => {
 
         // crea una nueva sala (de estar llenas las demas)
         if (!banRoom) { // si no encontro una sala disponible
+            banRoom = true;
             const idRoom = shortid.generate();
             var room = { id_room: idRoom }
             rooms[idRoom] = room;
@@ -194,7 +192,7 @@ io.on('connection', (socket) => {
     socket.on('room:leave', function() {
         if (roomGame != "") {
             // notificar a los demas clientes de esa sala
-            io.to(roomGame).emit("PlayerLeavedGame", { id: thisPlayerId });
+            io.to(roomGame).emit("player:leavedGame", { id: thisPlayerId });
 
             // borrar sala...
             const statusRoom = io.sockets.adapter.rooms[roomGame];
@@ -222,54 +220,26 @@ io.on('connection', (socket) => {
         }
     });*/
 
-    // el jugador acaba de iniciar sesion
-    socket.on('player:online', async function(data) {
-        const p = await Player.findById(data._id);
-        if (p) {
-            p.status_player = "online";
-            await p.save();
-        }
-        players[thisPlayerId].username = data.username;
-
-        socket.broadcast.emit('player:online', { id: thisPlayerId, user: data.username });
-    });
-
-    socket.on('spawn:player', async function(data) {
-        const p = await Player.findById(data._id);
-        p.status_player = "in a game";
-        await p.save();
-
-        // Envia para todos los jugadores.
-        io.to(roomGame).emit('spawn:player', { id: thisPlayerId, user: data.username });
-
-        // PODRIA ENVIARSE LAS CAJAS MEDIANTE UNA ROOM...
-        for (var b in boxes) {
-            socket.emit('spawnBox', boxes[b]);
-        }
-    });
-
-    socket.on('spawnBox', function(data) {
+    socket.on('box:spawn', function(data) {
         for (var b in boxes) {
             if (b == data.id) {
                 delete boxes[b];
                 boxesCount--;
 
-                socket.in(roomGame).broadcast.emit('removeBox', { id: data.id });
+                socket.in(roomGame).broadcast.emit('box:remove', { id: data.id });
 
                 const idBox = shortid.generate();
 
                 var box = {
                     id: idBox,
-                    posX: helpers.getRandomArbitrary(-50, 50),
-                    posY: helpers.getRandomArbitrary(-28, 28)
+                    posX: helpers.getRandomArbitrary(-25, 25),
+                    posY: helpers.getRandomArbitrary(-25, 25)
                 }
                 boxes[idBox] = box;
                 boxesCount++;
 
-                console.log("generando item random");
                 setTimeout(function() {
-                    io.to(roomGame).emit('spawnBox', box);
-                    //socket.emit('spawnBox', box);
+                    io.to(roomGame).emit('box:spawn', box);
                 }, 10000);
 
                 // generar item random
@@ -279,7 +249,7 @@ io.on('connection', (socket) => {
                 item.item = helpers.getRandomInt(0, data.total);
                 items[data.id] = item;
 
-                io.to(roomGame).emit('spawnRandomItem', item);
+                io.to(roomGame).emit('item:spawn', item);
                 //socket.emit('spawnRandomItem', item);
                 console.log("item: ", item);
                 break;
@@ -287,37 +257,61 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('destroyItem', function(data) {
+    socket.on('item:remove', function(data) {
         for (var i in items) {
             if (i == data.id) {
                 delete items[data.id];
 
-                socket.in(roomGame).broadcast.emit('destroyItem', { id: data.id });
+                io.to(roomGame).emit('item:remove', { id: data.id });
                 break;
             }
         }
     });
 
+    // el jugador acaba de iniciar sesion
+    socket.on('player:online', async function(data) {
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            p.status_player = "online";
+            await p.save();
+        }
+        players[thisPlayerId].username = data.username;
+
+        socket.broadcast.emit('player:online', { id: thisPlayerId, user: data.username });
+    });
+
+    socket.on('player:spawn', async function(data) {
+        const p = await Player.findById(data.id_database);
+        p.status_player = "in a game";
+        await p.save();
+
+        // data.id = thisPlayerId;
+
+        // Envia para todos los jugadores.
+        io.to(roomGame).emit('player:spawn', data);
+
+        // PODRIA ENVIARSE LAS CAJAS MEDIANTE UNA ROOM...
+        for (var b in boxes) {
+            socket.emit('box:spawn', boxes[b]);
+        }
+    });
+
     // actualiza la posicion y rotacion (y demas info) del jugador hacia los demás jugadores
-    socket.on('updatePosition', function(data) {
+    socket.on('player:position', function(data) {
         //console.log('update position: ', data);
-        data.id = thisPlayerId;
-        data.username = player.username;
         //player = data;
-        socket.in(roomGame).broadcast.emit('updatePosition', data);
+        socket.in(roomGame).broadcast.emit('player:position', data);
     });
 
     // actualiza si el jugador ha recibido o perdido salud
     socket.on('player:health', function(data) {
-        data.id = thisPlayerId;
+        //data.id = thisPlayerId;
         //player = data;
         socket.in(roomGame).broadcast.emit('player:health', data);
     });
 
     // actualiza si el jugador dispara
     socket.on('player:shoot', function(data) {
-        data.id = thisPlayerId;
-        //player = data;
         io.to(roomGame).emit('player:shoot', data);
         //socket.emit('player:shoot', data);
     });
@@ -352,7 +346,7 @@ io.on('connection', (socket) => {
             }
 
             // notificar a los demas que salio de la sala
-            socket.in(roomGame).broadcast.emit("PlayerLeavedGame", { id: thisPlayerId });
+            socket.in(roomGame).broadcast.emit("player:leavedGame", { id: thisPlayerId });
             console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has LEFT the room: " + roomGame);
 
             // console.log("<" + thisPlayerId + "> has left the room: " + roomGame);
