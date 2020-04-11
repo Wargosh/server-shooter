@@ -99,20 +99,6 @@ if (roomsCount == 0) {
     }
 }
 
-// generar cajas en posiciones aleatorias
-if (boxesCount == 0) {
-    for (let i = 0; i < 20; i++) {
-        const idBox = shortid.generate();
-        var box = {
-            id: idBox,
-            posX: helpers.getRandomArbitrary(-25, 25),
-            posY: helpers.getRandomArbitrary(-25, 25)
-        }
-        boxes[idBox] = box;
-        boxesCount++;
-    }
-}
-
 // OYENTE para clientes que entren al servidor
 io.on('connection', (socket) => {
     playersCount++;
@@ -154,6 +140,23 @@ io.on('connection', (socket) => {
                     if (statusRoom.length == 2) {
                         io.to(roomGame).emit('game:start', { message: 'OK' });
                     }
+
+                    // OJO...
+                    // Esta funcion no recicla, ni elimina los objetos creados... aún
+                    // Por lo que es necesario arreglarlo para no saturar el servidor.
+                    setTimeout(function() {
+                        for (let i = 0; i < 20; i++) {
+                            const idBox = shortid.generate();
+                            var box = {
+                                id: idBox,
+                                posX: helpers.getRandomArbitrary(-25, 25),
+                                posY: helpers.getRandomArbitrary(-25, 25)
+                            }
+                            boxes[idBox] = box;
+                            boxesCount++;
+                            io.to(roomGame).emit('box:spawn', box);
+                        }
+                    }, 2000); // esperar 2 segundos...
                     break;
                 }
             }
@@ -250,7 +253,6 @@ io.on('connection', (socket) => {
                 items[data.id] = item;
 
                 io.to(roomGame).emit('item:spawn', item);
-                //socket.emit('spawnRandomItem', item);
                 console.log("item: ", item);
                 break;
             }
@@ -285,35 +287,23 @@ io.on('connection', (socket) => {
         p.status_player = "in a game";
         await p.save();
 
-        // data.id = thisPlayerId;
-
         // Envia para todos los jugadores.
         io.to(roomGame).emit('player:spawn', data);
-
-        // PODRIA ENVIARSE LAS CAJAS MEDIANTE UNA ROOM...
-        for (var b in boxes) {
-            socket.emit('box:spawn', boxes[b]);
-        }
     });
 
     // actualiza la posicion y rotacion (y demas info) del jugador hacia los demás jugadores
     socket.on('player:position', function(data) {
-        //console.log('update position: ', data);
-        //player = data;
         socket.in(roomGame).broadcast.emit('player:position', data);
     });
 
     // actualiza si el jugador ha recibido o perdido salud
     socket.on('player:health', function(data) {
-        //data.id = thisPlayerId;
-        //player = data;
         socket.in(roomGame).broadcast.emit('player:health', data);
     });
 
     // actualiza si el jugador dispara
     socket.on('player:shoot', function(data) {
         io.to(roomGame).emit('player:shoot', data);
-        //socket.emit('player:shoot', data);
     });
 
     // notificar a los demas jugadores del jugador que ha muerto
