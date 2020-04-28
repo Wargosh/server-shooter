@@ -287,8 +287,8 @@ io.on('connection', (socket) => {
         p.status_player = "in a game";
         await p.save();
 
-        // Envia para todos los jugadores.
-        io.to(roomGame).emit('player:spawn', data);
+        // Envia para todos los jugadores de la sala.
+        socket.in(roomGame).broadcast.emit('player:spawn', data);
     });
 
     // actualiza la posicion y rotacion (y demas info) del jugador hacia los demás jugadores
