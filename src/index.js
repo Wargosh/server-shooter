@@ -150,7 +150,7 @@ io.on('connection', (socket) => {
                             var box = {
                                 id: idBox,
                                 posX: helpers.getRandomInt(-25, 25),
-                                posY: helpers.getRandomArbitrary(-25, 25)
+                                posY: helpers.getRandomInt(-25, 25)
                             }
                             boxes[idBox] = box;
                             boxesCount++;
@@ -236,7 +236,7 @@ io.on('connection', (socket) => {
                 var box = {
                     id: idBox,
                     posX: helpers.getRandomInt(-25, 25),
-                    posY: helpers.getRandomArbitrary(-25, 25)
+                    posY: helpers.getRandomInt(-25, 25)
                 }
                 boxes[idBox] = box;
                 boxesCount++;
