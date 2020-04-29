@@ -9,7 +9,7 @@ helpers.timeago = timestamp => {
 
 helpers.getRandomArbitrary = (min, max) => {
     var r = Math.random() * (max - min) + min;
-    return r.toFixed(5).toString().replace(".", ",");
+    return r.toFixed(5) /*.toString().replace(".", ",")*/ ;
 }
 
 helpers.getRandomInt = (min, max) => {

@@ -149,8 +149,8 @@ io.on('connection', (socket) => {
                             const idBox = shortid.generate();
                             var box = {
                                 id: idBox,
-                                posX: helpers.getRandomArbitrary(-25, 25),
-                                posY: helpers.getRandomArbitrary(-25, 25)
+                                posX: (helpers.getRandomArbitrary(-25, 25) * 1000.0),
+                                posY: (helpers.getRandomArbitrary(-25, 25) * 1000.0)
                             }
                             boxes[idBox] = box;
                             boxesCount++;
@@ -235,8 +235,8 @@ io.on('connection', (socket) => {
 
                 var box = {
                     id: idBox,
-                    posX: helpers.getRandomArbitrary(-25, 25),
-                    posY: helpers.getRandomArbitrary(-25, 25)
+                    posX: (helpers.getRandomArbitrary(-25, 25) * 1000.0),
+                    posY: (helpers.getRandomArbitrary(-25, 25) * 1000.0)
                 }
                 boxes[idBox] = box;
                 boxesCount++;
