@@ -136,7 +136,7 @@ io.on('connection', (socket) => {
                 if (auxRoom.length < 2) { // establesco un limite de usuarios por sala
                     banRoom = true;
                     enableClock = true; // para habilitar el temporizador en el juego
-                    seconds = 600; // 10 minutos
+                    seconds = 300; // 5 minutos
 
                     socket.join(r); // unirse a esta sala
                     roomGame = r;
