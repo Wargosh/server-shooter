@@ -104,6 +104,8 @@ io.on('connection', (socket) => {
     playersCount++;
     var roomGame = "";
     var enableClock = false;
+    var seconds = 0; // tiempo máximo que puede durar la partida
+    var intervalObj;
 
     const thisPlayerId = shortid.generate();
     console.log('new connection. ID Socket:' + socket.id + " ID: " + thisPlayerId);
@@ -134,6 +136,7 @@ io.on('connection', (socket) => {
                 if (auxRoom.length < 2) { // establesco un limite de usuarios por sala
                     banRoom = true;
                     enableClock = true; // para habilitar el temporizador en el juego
+                    seconds = 600; // 10 minutos
 
                     socket.join(r); // unirse a esta sala
                     roomGame = r;
@@ -195,20 +198,35 @@ io.on('connection', (socket) => {
         console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has JOINED to the room: " + roomGame);
 
         // Iniciar temporizador para la sala que acaba de iniciar una partida
-        var seconds = 600; // 10 minutos
-        while (enableClock && seconds > 0) { // mientras este activa la bandera o no se acabe el tiempo
+        /*while (enableClock && seconds > 0) { // mientras este activa la bandera o no se acabe el tiempo
             setTimeout(function() {
                 seconds--;
 
                 io.to(roomGame).emit('clock:update', { time: seconds });
             }, 1000); // esperar 1 segundo...
+        }*/
+        if (enableClock) {
+            interval();
         }
     });
+
+    function interval() {
+        intervalObj = setInterval(() => {
+            seconds--;
+            console.log("room: <" + roomGame + "> time: " + seconds);
+            io.to(roomGame).emit('clock:update', { time: seconds });
+            if (seconds <= 0) {
+                io.to(roomGame).emit('clock:timeOut', { time: seconds });
+                clearInterval(intervalObj);
+            }
+        }, 1000);
+    }
 
     // el jugador sale de una sala de juego...
     socket.on('room:leave', function() {
         if (roomGame != "") {
             enableClock = false; // evita que envie por accidente emits del temporizador
+            clearInterval(intervalObj);
 
             // notificar a los demas clientes de esa sala
             io.to(roomGame).emit("player:leavedGame", { id: thisPlayerId });
@@ -240,39 +258,39 @@ io.on('connection', (socket) => {
     });*/
 
     socket.on('box:spawn', function(data) {
-        //for (var b in boxes) {
-        //if (b == data.id) {
-        delete boxes[data.id];
-        boxesCount--;
+        for (var b in boxes) {
+            if (b == data.id) {
+                delete boxes[data.id];
+                boxesCount--;
 
-        socket.in(roomGame).broadcast.emit('box:remove', { id: data.id });
+                socket.in(roomGame).broadcast.emit('box:remove', { id: data.id });
 
-        const idBox = shortid.generate();
+                const idBox = shortid.generate();
 
-        var box = {
-            id: idBox,
-            posX: helpers.getRandomInt(-25, 25),
-            posY: helpers.getRandomInt(-25, 25)
+                var box = {
+                    id: idBox,
+                    posX: helpers.getRandomInt(-25, 25),
+                    posY: helpers.getRandomInt(-25, 25)
+                }
+                boxes[idBox] = box;
+                boxesCount++;
+
+                setTimeout(function() {
+                    io.to(roomGame).emit('box:spawn', box);
+                }, 10000);
+
+                // generar item random
+                var item = { id: data.id }
+                item = data;
+                item.id = data.id;
+                item.item = helpers.getRandomInt(0, data.total);
+                items[data.id] = item;
+
+                io.to(roomGame).emit('item:spawn', item);
+                console.log("item: ", item);
+                break;
+            }
         }
-        boxes[idBox] = box;
-        boxesCount++;
-
-        setTimeout(function() {
-            io.to(roomGame).emit('box:spawn', box);
-        }, 10000);
-
-        // generar item random
-        var item = { id: data.id }
-        item = data;
-        item.id = data.id;
-        item.item = helpers.getRandomInt(0, data.total);
-        items[data.id] = item;
-
-        io.to(roomGame).emit('item:spawn', item);
-        console.log("item: ", item);
-        //break;
-        //}
-        //}
     });
 
     socket.on('item:remove', function(data) {
@@ -341,6 +359,7 @@ io.on('connection', (socket) => {
         if (roomGame != "") {
             // sacarlo de la sala
             socket.leave(roomGame);
+            clearInterval(intervalObj); // terminar ciclo del reloj (de haber uno)
 
             // borrar sala...
             const statusRoom = io.sockets.adapter.rooms[roomGame];
