@@ -198,13 +198,6 @@ io.on('connection', (socket) => {
         console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has JOINED to the room: " + roomGame);
 
         // Iniciar temporizador para la sala que acaba de iniciar una partida
-        /*while (enableClock && seconds > 0) { // mientras este activa la bandera o no se acabe el tiempo
-            setTimeout(function() {
-                seconds--;
-
-                io.to(roomGame).emit('clock:update', { time: seconds });
-            }, 1000); // esperar 1 segundo...
-        }*/
         if (enableClock) {
             interval();
         }
@@ -213,7 +206,7 @@ io.on('connection', (socket) => {
     function interval() {
         intervalObj = setInterval(() => {
             seconds--;
-            console.log("room: <" + roomGame + "> time: " + seconds);
+            //console.log("room: <" + roomGame + "> time: " + seconds);
             io.to(roomGame).emit('clock:update', { time: seconds });
             if (seconds <= 0) {
                 io.to(roomGame).emit('clock:timeOut', { time: seconds });
@@ -250,11 +243,8 @@ io.on('connection', (socket) => {
 
     /*socket.on('leaderboard', async function () {
         const bestPlayers = await new Player.find().sort({ rank: 'desc' }).limit(5);
-        if (bestPlayers) {
-            socket.emit('leaderboard', {
-                ranks: bestPlayers
-            });
-        }
+        if (bestPlayers)
+            socket.emit('leaderboard', { ranks: bestPlayers });
     });*/
 
     socket.on('box:spawn', function(data) {
@@ -266,7 +256,6 @@ io.on('connection', (socket) => {
                 socket.in(roomGame).broadcast.emit('box:remove', { id: data.id });
 
                 const idBox = shortid.generate();
-
                 var box = {
                     id: idBox,
                     posX: helpers.getRandomInt(-25, 25),
@@ -317,12 +306,13 @@ io.on('connection', (socket) => {
     });
 
     socket.on('player:spawn', async function(data) {
-        const p = await Player.findById(data.id_database);
-        p.status_player = "in a game";
-        await p.save();
-
         // Envia para todos los jugadores de la sala.
         socket.in(roomGame).broadcast.emit('player:spawn', data);
+        // Almacena en la bd
+        const p = await Player.findById(data.id_database);
+        p.status_player = "in a game";
+        p.total_games++;
+        await p.save();
     });
 
     // actualiza la posicion y rotacion (y demas info) del jugador hacia los demás jugadores
@@ -341,9 +331,24 @@ io.on('connection', (socket) => {
     });
 
     // notificar a los demas jugadores del jugador que ha muerto
-    socket.on('player:dead', function(data) {
+    socket.on('player:dead', async function(data) {
         console.log("info kill = ", data);
         socket.in(roomGame).broadcast.emit('player:dead', data);
+
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            p.total_deads++;
+            await p.save();
+        }
+    });
+
+    // almacenar en tiempo real cuando el jugador obtiene una kill
+    socket.on('player:getKill', async function(data) {
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            p.total_kills++;
+            await p.save();
+        }
     });
 
     // habilitar el prefab del jugador en los otros clientes

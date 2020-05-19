@@ -15,6 +15,7 @@ const PlayerSchema = new Schema({
     // Información general de partidas
     total_games: { type: Number, default: 0 },
     total_kills: { type: Number, default: 0 },
+    total_deads: { type: Number, default: 0 },
     rank: { type: Number, default: 0 },
     // Información del estado de la cuenta, etc
     status_player: { type: String, default: 'offline' },
