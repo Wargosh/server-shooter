@@ -355,9 +355,18 @@ io.on('connection', (socket) => {
     socket.on('player:save_XP', async function(data) {
         const p = await Player.findById(data.id_database);
         if (p) {
-            p.total_xp += data.xp_player;
+            p.total_xp = data.xp_player;
             p.cur_xp_awards = data.xp_awards_curr;
             p.diff_xp_awards = data.xp_awards_diff;
+            await p.save();
+        }
+    });
+
+    // almacenar en tiempo real las monedas del jugador
+    socket.on('player:save_coins', async function(data) {
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            p.total_coins += data.total_coins;
             await p.save();
         }
     });
