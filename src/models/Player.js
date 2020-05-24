@@ -12,7 +12,8 @@ const PlayerSchema = new Schema({
     cur_rank: { type: Number, default: 0 }, // rango actual
     max_rank: { type: Number, default: 0 }, // rango maximo que ha llegado el jugador
     total_xp: { type: Number, default: 0 }, // experiencia del jugador
-    total_xp_awards: { type: Number, default: 0 }, // experiencia restante que mantiene la barra de premios
+    cur_xp_awards: { type: Number, default: 0 }, // experiencia actual que mantiene la barra de premios
+    diff_xp_awards: { type: Number, default: 0 }, // experiencia restante que mantiene la barra de premios
     // Información de monedas, gemas, etc
     total_coins: { type: Number, default: 0 },
     total_gems: { type: Number, default: 0 },
