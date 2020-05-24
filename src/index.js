@@ -351,6 +351,16 @@ io.on('connection', (socket) => {
         }
     });
 
+    // almacenar en tiempo real la experiencia del jugador
+    socket.on('player:save_XP', async function(data) {
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            p.total_xp += data.xp_player;
+            p.total_xp_awards = data.xp_awards;
+            await p.save();
+        }
+    });
+
     // habilitar el prefab del jugador en los otros clientes
     socket.on('player:respawn', function(data) {
         socket.in(roomGame).broadcast.emit('player:respawn', data);
