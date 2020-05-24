@@ -311,7 +311,7 @@ io.on('connection', (socket) => {
         // Almacena en la bd
         const p = await Player.findById(data.id_database);
         p.status_player = "in a game";
-        p.total_games++;
+        p.total_games_vs++;
         await p.save();
     });
 
