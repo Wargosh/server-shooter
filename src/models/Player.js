@@ -14,6 +14,9 @@ const PlayerSchema = new Schema({
     total_xp: { type: Number, default: 0 }, // experiencia del jugador
     cur_xp_awards: { type: Number, default: 0 }, // experiencia actual que mantiene la barra de premios
     diff_xp_awards: { type: Number, default: 0 }, // experiencia restante que mantiene la barra de premios
+    claim_award1: { type: Boolean, default: false }, // estado del reclamo de premio 1
+    claim_award2: { type: Boolean, default: false }, // estado del reclamo de premio 2
+    claim_award3: { type: Boolean, default: false }, // estado del reclamo de premio 3
     // Información de monedas, gemas, etc
     total_coins: { type: Number, default: 0 },
     total_gems: { type: Number, default: 0 },

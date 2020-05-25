@@ -351,6 +351,11 @@ io.on('connection', (socket) => {
         }
     });
 
+    // habilitar el prefab del jugador en los otros clientes
+    socket.on('player:respawn', function(data) {
+        socket.in(roomGame).broadcast.emit('player:respawn', data);
+    });
+
     // almacenar en tiempo real la experiencia del jugador
     socket.on('player:save_XP', async function(data) {
         const p = await Player.findById(data.id_database);
@@ -371,9 +376,26 @@ io.on('connection', (socket) => {
         }
     });
 
-    // habilitar el prefab del jugador en los otros clientes
-    socket.on('player:respawn', function(data) {
-        socket.in(roomGame).broadcast.emit('player:respawn', data);
+    // almacenar en tiempo real las monedas del jugador
+    socket.on('player:save_status_claim_award', async function(data) {
+        const p = await Player.findById(data.id_database);
+        switch (data.pos_award) {
+            case 1:
+                p.claim_award1 = data.claim_award;
+                break;
+            case 2:
+                p.claim_award2 = data.claim_award;
+                break;
+            case 3:
+                p.claim_award3 = data.claim_award;
+                break;
+            case 4:
+                p.claim_award1 = data.claim_award;
+                p.claim_award2 = data.claim_award;
+                p.claim_award3 = data.claim_award;
+                break;
+        }
+        await p.save();
     });
 
     // Cuando un jugador se desconecta
