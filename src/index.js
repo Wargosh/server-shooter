@@ -110,8 +110,6 @@ io.on('connection', (socket) => {
     const thisPlayerId = shortid.generate();
     console.log('new connection. ID Socket:' + socket.id + " ID: " + thisPlayerId);
 
-    const playerDB = new Player(); // almacena el objeto que contiene informacion del jugador desde la BD
-
     var player = {
         id: thisPlayerId,
         username: "none",
@@ -297,10 +295,10 @@ io.on('connection', (socket) => {
 
     // el jugador acaba de iniciar sesion
     socket.on('player:online', async function(data) {
-        playerDB = await Player.findById(data.id_database);
-        if (playerDB) {
-            playerDB.status_player = "online";
-            await playerDB.save();
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            p.status_player = "online";
+            await p.save();
         }
         players[thisPlayerId].username = data.username;
 
@@ -360,12 +358,14 @@ io.on('connection', (socket) => {
 
     // almacenar en tiempo real la experiencia del jugador
     socket.on('player:save_XP', async function(data) {
-        //const p = await Player.findById(data.id_database);
-        if (playerDB) {
-            playerDB.total_xp = data.xp_player;
-            playerDB.cur_xp_awards = data.xp_awards_curr;
-            playerDB.diff_xp_awards = data.xp_awards_diff;
-            await playerDB.save();
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            p.total_xp = data.xp_player;
+            p.cur_xp_awards = data.xp_awards_curr;
+            p.diff_xp_awards = data.xp_awards_diff;
+            p.cur_ranking_vs = data.cur_ranking_vs;
+            p.max_ranking_vs = data.max_ranking_vs;
+            await p.save();
         }
     });
 
