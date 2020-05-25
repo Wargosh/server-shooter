@@ -102,13 +102,15 @@ if (roomsCount == 0) {
 // OYENTE para clientes que entren al servidor
 io.on('connection', (socket) => {
     playersCount++;
-    var roomGame = "";
-    var enableClock = false;
+    var roomGame = ""; // almacena la sala actual en la que se encuentra el jugador
+    var enableClock = false; // controla si es posible activar el reloj de partida
     var seconds = 0; // tiempo máximo que puede durar la partida
-    var intervalObj;
+    var intervalObj; // controla el intervalo de tiempo que envia informacion del reloj a una partida
 
     const thisPlayerId = shortid.generate();
     console.log('new connection. ID Socket:' + socket.id + " ID: " + thisPlayerId);
+
+    const playerDB = new Player(); // almacena el objeto que contiene informacion del jugador desde la BD
 
     var player = {
         id: thisPlayerId,
@@ -295,10 +297,10 @@ io.on('connection', (socket) => {
 
     // el jugador acaba de iniciar sesion
     socket.on('player:online', async function(data) {
-        const p = await Player.findById(data.id_database);
-        if (p) {
-            p.status_player = "online";
-            await p.save();
+        playerDB = await Player.findById(data.id_database);
+        if (playerDB) {
+            playerDB.status_player = "online";
+            await playerDB.save();
         }
         players[thisPlayerId].username = data.username;
 
@@ -358,12 +360,12 @@ io.on('connection', (socket) => {
 
     // almacenar en tiempo real la experiencia del jugador
     socket.on('player:save_XP', async function(data) {
-        const p = await Player.findById(data.id_database);
-        if (p) {
-            p.total_xp = data.xp_player;
-            p.cur_xp_awards = data.xp_awards_curr;
-            p.diff_xp_awards = data.xp_awards_diff;
-            await p.save();
+        //const p = await Player.findById(data.id_database);
+        if (playerDB) {
+            playerDB.total_xp = data.xp_player;
+            playerDB.cur_xp_awards = data.xp_awards_curr;
+            playerDB.diff_xp_awards = data.xp_awards_diff;
+            await playerDB.save();
         }
     });
 

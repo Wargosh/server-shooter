@@ -8,9 +8,8 @@ const PlayerSchema = new Schema({
     email: { type: String, required: true },
     password: { type: String, required: true },
     image: { type: String, default: 'default.png', required: true },
+    level: { type: Number, default: 1 }, // nivel actual del jugador
     // Información de las barras de estado (nivel de tanques, minas y power ups)
-    cur_rank: { type: Number, default: 0 }, // rango actual
-    max_rank: { type: Number, default: 0 }, // rango maximo que ha llegado el jugador
     total_xp: { type: Number, default: 0 }, // experiencia del jugador
     cur_xp_awards: { type: Number, default: 0 }, // experiencia actual que mantiene la barra de premios
     diff_xp_awards: { type: Number, default: 0 }, // experiencia restante que mantiene la barra de premios
@@ -22,6 +21,8 @@ const PlayerSchema = new Schema({
     total_gems: { type: Number, default: 0 },
     // Información general de partidas
     total_games_vs: { type: Number, default: 0 }, // total de partidas en VS
+    cur_ranking_vs: { type: Number, default: 0 }, // rango actual en VS
+    max_ranking_vs: { type: Number, default: 0 }, // rango maximo que ha llegado el jugador en VS
     total_wins: { type: Number, default: 0 }, // total de partidas ganadas
     total_losses: { type: Number, default: 0 }, // total de partidas perdidas
     total_draws: { type: Number, default: 0 }, // total de partidas en empate
