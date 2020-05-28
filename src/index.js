@@ -414,6 +414,20 @@ io.on('connection', (socket) => {
         await p.save();
     });
 
+    // actualizar niveles de las mejoras de los tanques
+    socket.on('player:save_status_level_hull', async function(data) {
+        const p = await Player.findById(data.id_database);
+        p.hull_level_0 = data.hull_level_0;
+        p.hull_level_1 = data.hull_level_1;
+        p.hull_level_2 = data.hull_level_2;
+        p.hull_level_3 = data.hull_level_3;
+        p.hull_level_4 = data.hull_level_4;
+        p.hull_level_5 = data.hull_level_5;
+        p.hull_level_6 = data.hull_level_6;
+        p.hull_level_7 = data.hull_level_7;
+        await p.save();
+    });
+
     // Cuando un jugador se desconecta
     socket.on('disconnect', async function() {
         playersCount--;
