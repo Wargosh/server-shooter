@@ -28,6 +28,15 @@ const PlayerSchema = new Schema({
     total_draws: { type: Number, default: 0 }, // total de partidas en empate
     total_kills: { type: Number, default: 0 }, // total de kills
     total_deads: { type: Number, default: 0 }, // total de muertes del jugador
+    // Información de los niveles de mejoras
+    cannon_level_0: { type: Number, default: 1 }, // nivel mejora de C-Alt-1
+    cannon_level_1: { type: Number, default: 1 }, // nivel mejora de C-Alt-2
+    cannon_level_2: { type: Number, default: 1 }, // nivel mejora de C-Alt-3
+    cannon_level_3: { type: Number, default: 1 }, // nivel mejora de C-Alt-4
+    cannon_level_4: { type: Number, default: 1 }, // nivel mejora de C-Alt-5
+    cannon_level_5: { type: Number, default: 1 }, // nivel mejora de C-Alt-6
+    cannon_level_6: { type: Number, default: 1 }, // nivel mejora de C-Alt-7
+    cannon_level_7: { type: Number, default: 1 }, // nivel mejora de C-Alt-8
     // Información del estado de la cuenta, etc
     status_player: { type: String, default: 'offline' },
     status_account: { type: String, default: 'active' },

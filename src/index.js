@@ -400,6 +400,20 @@ io.on('connection', (socket) => {
         await p.save();
     });
 
+    // actualizar niveles de las mejoras de los cañones
+    socket.on('player:save_status_level_cannon', async function(data) {
+        const p = await Player.findById(data.id_database);
+        p.cannon_level_0 = data.cannon_level_0;
+        p.cannon_level_1 = data.cannon_level_1;
+        p.cannon_level_2 = data.cannon_level_2;
+        p.cannon_level_3 = data.cannon_level_3;
+        p.cannon_level_4 = data.cannon_level_4;
+        p.cannon_level_5 = data.cannon_level_5;
+        p.cannon_level_6 = data.cannon_level_6;
+        p.cannon_level_7 = data.cannon_level_7;
+        await p.save();
+    });
+
     // Cuando un jugador se desconecta
     socket.on('disconnect', async function() {
         playersCount--;
