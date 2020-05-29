@@ -54,6 +54,7 @@ const PlayerSchema = new Schema({
     powerup_level_shield: { type: Number, default: 1 }, // nivel mejora de powerup 1
     powerup_level_speed: { type: Number, default: 1 }, // nivel mejora de powerup 2
     powerup_level_damage: { type: Number, default: 1 }, // nivel mejora de powerup 3
+    powerup_level_repair: { type: Number, default: 1 }, // nivel mejora de powerup 4
     // Información del estado de la cuenta, etc
     status_player: { type: String, default: 'offline' },
     status_account: { type: String, default: 'active' },
