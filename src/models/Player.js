@@ -46,6 +46,14 @@ const PlayerSchema = new Schema({
     hull_level_5: { type: Number, default: 1 }, // nivel mejora de H-Alt-6
     hull_level_6: { type: Number, default: 1 }, // nivel mejora de H-Alt-7
     hull_level_7: { type: Number, default: 1 }, // nivel mejora de H-Alt-8
+    // Información de los niveles de mejoras - mines
+    mine_level_bomb: { type: Number, default: 1 }, // nivel mejora de mina 1
+    mine_level_stun: { type: Number, default: 1 }, // nivel mejora de mina 2
+    mine_level_freeze: { type: Number, default: 1 }, // nivel mejora de mina 3
+    // Información de los niveles de mejoras - power ups
+    powerup_level_shield: { type: Number, default: 1 }, // nivel mejora de powerup 1
+    powerup_level_speed: { type: Number, default: 1 }, // nivel mejora de powerup 2
+    powerup_level_damage: { type: Number, default: 1 }, // nivel mejora de powerup 3
     // Información del estado de la cuenta, etc
     status_player: { type: String, default: 'offline' },
     status_account: { type: String, default: 'active' },

@@ -428,6 +428,25 @@ io.on('connection', (socket) => {
         await p.save();
     });
 
+    // actualizar niveles de las mejoras de las minas
+    socket.on('player:save_status_level_mines', async function(data) {
+        const p = await Player.findById(data.id_database);
+        p.mine_level_bomb = data.mine_level_bomb;
+        p.mine_level_stun = data.mine_level_stun;
+        p.mine_level_freeze = data.mine_level_freeze;
+        await p.save();
+    });
+
+    // actualizar niveles de las mejoras de las powerups
+    socket.on('player:save_status_level_powerups', async function(data) {
+        const p = await Player.findById(data.id_database);
+        p.powerup_level_shield = data.powerup_level_shield;
+        p.powerup_level_speed = data.powerup_level_speed;
+        p.powerup_level_damage = data.powerup_level_damage;
+        p.powerup_level_repair = data.powerup_level_repair;
+        await p.save();
+    });
+
     // Cuando un jugador se desconecta
     socket.on('disconnect', async function() {
         playersCount--;
