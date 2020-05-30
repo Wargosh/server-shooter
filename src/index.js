@@ -374,7 +374,7 @@ io.on('connection', (socket) => {
         const p = await Player.findById(data.id_database);
         if (p) {
             p.total_coins = data.total_coins;
-            p.total_coins = data.total_gems;
+            p.total_gems = data.total_gems;
             await p.save();
         }
     });
