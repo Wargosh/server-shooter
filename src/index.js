@@ -369,11 +369,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // almacenar en tiempo real las monedas del jugador
+    // almacenar en tiempo real las monedas y gemas del jugador
     socket.on('player:save_coins', async function(data) {
         const p = await Player.findById(data.id_database);
         if (p) {
             p.total_coins = data.total_coins;
+            p.total_coins = data.total_gems;
             await p.save();
         }
     });
