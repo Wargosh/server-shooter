@@ -36,11 +36,15 @@ router.post('/player/register', async(req, res) => {
     }
 });
 
-router.get('/searchplayer', async(req, res) => {
+router.post('/searchplayer', async(req, res) => {
     const { username } = req.body;
     const players = await Player.find({ 'username': new RegExp(username, 'i') }).limit(25);
-
-    res.send(players);
+    console.log(players);
+    if (players) {
+        res.send({ players: players });
+    } else {
+        res.send({ error: 'Ha ocurrido un error al intentar obtener el listado de usuarios' });
+    }
 });
 
 router.get('/users/logout', (req, res) => {
