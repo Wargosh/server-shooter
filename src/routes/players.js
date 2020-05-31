@@ -36,7 +36,7 @@ router.post('/player/register', async(req, res) => {
     }
 });
 
-router.get('/searchplayer', isAuthenticated, async(req, res) => {
+router.get('/searchplayer', async(req, res) => {
     const { username } = req.body;
     const players = await Player.find({ 'username': new RegExp(username, 'i') }).limit(25);
 
