@@ -298,9 +298,11 @@ io.on('connection', (socket) => {
         const p = await Player.findById(data.id_database);
         if (p) {
             p.status_player = "online";
+            p.updated_at = Date.now();
             await p.save();
         }
         players[thisPlayerId].username = data.username;
+        socket.join(data.username); // unirse a esta sala oyente de notificaciones personales
 
         socket.broadcast.emit('player:online', { id: thisPlayerId, user: data.username });
     });
@@ -312,6 +314,7 @@ io.on('connection', (socket) => {
         const p = await Player.findById(data.id_database);
         p.status_player = "in a game";
         p.total_games_vs++;
+        p.updated_at = Date.now();
         await p.save();
     });
 
@@ -365,6 +368,7 @@ io.on('connection', (socket) => {
             p.diff_xp_awards = data.xp_awards_diff;
             p.cur_ranking_vs = data.cur_ranking_vs;
             p.max_ranking_vs = data.max_ranking_vs;
+            p.updated_at = Date.now();
             await p.save();
         }
     });
@@ -375,6 +379,7 @@ io.on('connection', (socket) => {
         if (p) {
             p.total_coins = data.total_coins;
             p.total_gems = data.total_gems;
+            p.updated_at = Date.now();
             await p.save();
         }
     });
@@ -398,6 +403,7 @@ io.on('connection', (socket) => {
                 p.claim_award3 = data.claim_award;
                 break;
         }
+        p.updated_at = Date.now();
         await p.save();
     });
 
@@ -412,6 +418,7 @@ io.on('connection', (socket) => {
         p.cannon_level_5 = data.cannon_level_5;
         p.cannon_level_6 = data.cannon_level_6;
         p.cannon_level_7 = data.cannon_level_7;
+        p.updated_at = Date.now();
         await p.save();
     });
 
@@ -426,6 +433,7 @@ io.on('connection', (socket) => {
         p.hull_level_5 = data.hull_level_5;
         p.hull_level_6 = data.hull_level_6;
         p.hull_level_7 = data.hull_level_7;
+        p.updated_at = Date.now();
         await p.save();
     });
 
@@ -435,6 +443,7 @@ io.on('connection', (socket) => {
         p.mine_level_bomb = data.mine_level_bomb;
         p.mine_level_stun = data.mine_level_stun;
         p.mine_level_freeze = data.mine_level_freeze;
+        p.updated_at = Date.now();
         await p.save();
     });
 
@@ -445,7 +454,50 @@ io.on('connection', (socket) => {
         p.powerup_level_speed = data.powerup_level_speed;
         p.powerup_level_damage = data.powerup_level_damage;
         p.powerup_level_repair = data.powerup_level_repair;
+        p.updated_at = Date.now();
         await p.save();
+    });
+
+    // almacecna la solicitud de amistad e informa al jugador dirigido
+    socket.on('player:save_friend_request', async function(data) {
+        const newFriend = new Friend();
+        newFriend.user_first = data.user_first;
+        newFriend.user_second = data.user_second;
+        newFriend.status = 0; // solicitud
+        const str1 = shortid.generate();
+        const str2 = shortid.generate();
+        newFriend.private_room = str1 + str2;
+
+        await newFriend.save();
+
+        socket.join(data.user_second); // entrar a la sala privada de notificaciones del jugador
+        io.to(data.user_second).emit('player:update_all_request', { user_request: data.user_first });
+        socket.leave(data.user_second); // salir de la sala una vez que se ha enviado la solicitud
+    });
+
+    // almacecena la amistad e informa al jugador dirigido
+    socket.on('player:save_friend', async function(data) {
+        const fr = await Friend.findById(data.id_request);
+        if (fr) {
+            fr.status = 1; // amigo
+            await fr.save();
+
+            socket.join(data.user); // entrar a la sala privada de notificaciones del jugador
+            io.to(data.user).emit('player:update_all_request', { user_request: data.user });
+            socket.leave(data.user); // salir de la sala una vez que se ha enviado la solicitud
+        }
+    });
+
+    // almacecena la amistad e informa al jugador dirigido
+    socket.on('player:remove_friendship', async function(data) {
+        const fr = await Friend.findById(data.id_request);
+        if (fr) {
+            fr.remove();
+            socket.join(data.user); // entrar a la sala privada de notificaciones del jugador
+            io.to(data.user).emit('player:update_all_request', { user_request: data.user });
+            socket.leave(data.user); // salir de la sala una vez que se ha enviado la solicitud
+        } else
+            console.log("Ha ocurrido un error al intentar borrar la solicitud.");
     });
 
     // Cuando un jugador se desconecta
