@@ -503,13 +503,11 @@ io.on('connection', (socket) => {
     // Cuando un jugador se desconecta
     socket.on('disconnect', async function() {
         playersCount--;
-
         // si se encontraba en una partida primero hay que sacarlo de la sala...
         if (roomGame != "") {
             // sacarlo de la sala
             socket.leave(roomGame);
             clearInterval(intervalObj); // terminar ciclo del reloj (de haber uno)
-
             // borrar sala...
             const statusRoom = io.sockets.adapter.rooms[roomGame];
             if (statusRoom) {
@@ -518,15 +516,12 @@ io.on('connection', (socket) => {
                     roomsCount--;
                 }
             }
-
             // notificar a los demas que salio de la sala
             socket.in(roomGame).broadcast.emit("player:leavedGame", { id: thisPlayerId });
             console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has LEFT the room: " + roomGame);
-
-            // console.log("<" + thisPlayerId + "> has left the room: " + roomGame);
             roomGame = "";
         }
-
+        // almacenar el estado de desconectado al jugador
         await Player.findOneAndUpdate({ username: players[thisPlayerId].username }, { status_player: "offline" });
         delete players[thisPlayerId];
         socket.broadcast.emit('disconnected', { id: thisPlayerId });
@@ -535,12 +530,17 @@ io.on('connection', (socket) => {
     });
 
     /************************ ****** *** ****** | CHAT | ****** *** ****** ************************/
-    socket.on('chat:messageGlobal', async function(data) { // CAMBIAR NOMBRE
+    socket.on('chat:JoinToChatRoom', async function(data) {
+        // console.log(players[thisPlayerId].username + "Joining to chat room: " + data.private_room);
+        socket.join(data.private_room); // unirse a esta sala
+    });
+
+    socket.on('chat:messageGlobal', async function(data) {
         const item_chat = new Chat();
-        item_chat.message = data.message;
-        item_chat.type = 'global';
         item_chat.username = data.username;
+        item_chat.message = data.message;
         item_chat.img_username = data.image;
+        item_chat.type = 'global';
         await item_chat.save();
         // Envia a todos
         io.sockets.emit('chat:messageGlobal', data); // envia datos desde aqui (servidor) a todos las conexiones (websockets)
@@ -548,17 +548,15 @@ io.on('connection', (socket) => {
 
     socket.on('chat:messageToUser', async function(data) {
         const item_chat_p = new Chat();
+        item_chat_p.username = data.username; // usuario que envia el msj
         item_chat_p.message = data.message;
-        item_chat_p.type = 'private'; // mensaje privado
-        item_chat_p.username = data.username; // usuario que envia
         item_chat_p.img_username = data.image;
+        item_chat_p.type = 'private'; // mensaje privado
         item_chat_p.user_re = data.user_re; // usuario que recibe el msj
-        item_chat_p.img_user_re = data.image_usr_re;
-
+        item_chat_p.private_room = data.private_room;
         await item_chat_p.save();
-
-        // envia a la room con nombre del usuario quien recibe el mensaje
-        socket.in(data.user_re).broadcast.emit('chat:messageToUser', data);
+        // envia a la room del usuario quien recibe el mensaje
+        io.to(data.private_room).emit('chat:messageUser', data);
     });
 
     // socket.on('chat:typing', (data) => {

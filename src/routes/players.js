@@ -1,9 +1,8 @@
 const router = require('express').Router();
 const helpers = require('../helpers');
-
 const Player = require('../models/Player');
 const Friend = require('../models/Friend');
-const { randomString } = require('../helpers/libs');
+//const { randomString } = require('../helpers/libs');
 
 router.post('/player/logingame', async(req, res) => {
     const { email, password } = req.body;
