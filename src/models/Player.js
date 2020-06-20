@@ -7,7 +7,8 @@ const PlayerSchema = new Schema({
     username: { type: String, required: true },
     email: { type: String, required: true },
     password: { type: String, required: true },
-    image: { type: String, default: 'default.png', required: true },
+    image: { type: String, default: 'avatar_2', required: true }, // imagen de perfil de usuario
+    img_frame: { type: String, default: 'frame_0', required: true }, // marco de la imagen
     level: { type: Number, default: 1 }, // nivel actual del jugador
     // Información de las barras de estado (nivel de tanques, minas y power ups)
     total_xp: { type: Number, default: 0 }, // experiencia del jugador

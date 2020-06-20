@@ -384,6 +384,17 @@ io.on('connection', (socket) => {
         }
     });
 
+    // almacenar en tiempo real el marco y la imagen de perfil
+    socket.on('player:save_image', async function(data) {
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            p.image = data.image;
+            p.img_frame = data.img_frame;
+            p.updated_at = Date.now();
+            await p.save();
+        }
+    });
+
     // almacenar en tiempo real las monedas del jugador
     socket.on('player:save_status_claim_award', async function(data) {
         const p = await Player.findById(data.id_database);
