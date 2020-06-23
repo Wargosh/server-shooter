@@ -92,7 +92,10 @@ if (roomsCount == 0) {
     for (let i = 0; i < 500; i++) {
         const idRoom = shortid.generate();
         var room = {
-            id_room: idRoom
+            id_room: idRoom,
+            game_mode: "",
+            limit: 0,
+            status: "available" // [available, queue, lock] | disponible, en cola y bloqueada 
         }
         rooms[idRoom] = room;
         roomsCount++;
@@ -125,28 +128,37 @@ io.on('connection', (socket) => {
     socket.emit('updateTotalPlayers', { nPlayers: playersCount.toString() });
 
     // el jugador 'entra' a una sala de juego... aleatoria
-    socket.on('room:game', function() {
+    socket.on('room:game', function(data) {
         var banRoom = false;
         enableClock = false; // evita que envie por accidente emits del temporizador
 
         // buscar en salas que ya esten creadas... (con alguien ya dentro)
         for (var r in rooms) {
-            const auxRoom = io.sockets.adapter.rooms[r];
-            if (auxRoom) {
-                if (auxRoom.length < 2) { // establesco un limite de usuarios por sala
+            const roomExist = io.sockets.adapter.rooms[r];
+            if (roomExist) { // verificar que la sala exista para evitar errores
+                //if (roomExist.length < 2) { // establesco un limite de usuarios por sala
+                console.log(rooms[r].status + " | " + rooms[r].game_mode);
+                // verificar que la sala este en cola y en el modo de juego elegido por el jugador
+                if (rooms[r].status == "queue" && rooms[r].game_mode == data.game_mode && rooms[r].limit == (data.n_players * 2)) {
                     banRoom = true;
-                    enableClock = true; // para habilitar el temporizador en el juego
-                    seconds = 300; // 5 minutos
+                    if (rooms[r].game_mode == "Versus") {
+                        seconds = 220; // 3 minutos y 40 segundos... (10 seg para preparar el reloj)
+                        enableClock = true; // para habilitar el temporizador en el juego
+                    }
 
-                    socket.join(r); // unirse a esta sala
-                    roomGame = r;
+                    socket.join(rooms[r].id_room); // unirse a esta sala
+                    roomGame = rooms[r].id_room;
                     players[thisPlayerId].roomGame = roomGame;
+                    io.to(roomGame).emit('game:players_queue', { n_queue_players: roomExist.length });
+                    console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has JOINED 2 to the room: " + rooms[r].id_room + " | game_mode: " + rooms[r].game_mode + " | limit: " + rooms[r].limit + " | status: " + rooms[r].status);
 
                     // mantener al cliente en cola, hasta cumplir la condición
                     const statusRoom = io.sockets.adapter.rooms[r];
-                    if (statusRoom.length == 2) {
+                    if (statusRoom.length == rooms[r].limit) {
+                        rooms[r].status = "lock";
                         io.to(roomGame).emit('game:start', { message: 'OK' });
-                    }
+                    } else
+                        break;
 
                     // OJO...
                     // Esta funcion no recicla, ni elimina los objetos creados... aún
@@ -172,12 +184,20 @@ io.on('connection', (socket) => {
         // establecer una sala disponible (vacia) para el jugador
         if (!banRoom) {
             for (var r in rooms) {
-                const auxRoom = io.sockets.adapter.rooms[r];
-                if (!auxRoom) {
+                // Si la sala esta disponible y no tiene modo de juego o es igual al modo que ha seleccionado
+                if (rooms[r].status == "available" && (rooms[r].game_mode == "" /* || rooms[r].game_mode == data.game_mode*/ )) {
+                    var lim = 2;
+                    if (data.game_mode == "Versus")
+                        rooms[r].limit = data.n_players * 2;
+                    rooms[r].status = "queue"; // cambiar el estado de la sala de "disponible" a "en cola"
+                    rooms[r].game_mode = data.game_mode;
                     banRoom = true;
-                    socket.join(r); // unirse a esta sala
-                    roomGame = r;
+                    socket.join(rooms[r].id_room); // unirse a esta sala
+                    roomGame = rooms[r].id_room;
                     players[thisPlayerId].roomGame = roomGame;
+                    const roomExist = io.sockets.adapter.rooms[r];
+                    io.to(roomGame).emit('game:players_queue', { n_queue_players: roomExist.length });
+                    console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has JOINED 1 to the room: " + rooms[r].id_room + " | game_mode: " + rooms[r].game_mode + " | limit: " + rooms[r].limit + " | status: " + rooms[r].status);
                     break;
                 }
             }
@@ -187,32 +207,34 @@ io.on('connection', (socket) => {
         if (!banRoom) { // si no encontro una sala disponible
             banRoom = true;
             const idRoom = shortid.generate();
-            var room = { id_room: idRoom }
+            var lim = 2;
+            if (data.game_mode == "Versus")
+                lim = data.n_players * 2;
+            var room = { id_room: idRoom, game_mode: data.game_mode, limit: lim, status: "queue" }
             rooms[idRoom] = room;
 
             socket.join(idRoom); // unirse a esta sala
             roomGame = idRoom;
-
             roomsCount++;
+            io.to(roomGame).emit('game:players_queue', { n_queue_players: roomExist.length });
+            console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has CREATED to the room: " + rooms[room].id_room + " | game_mode: " + rooms[room].game_mode + " | limit: " + rooms[room].limit + " | status: " + rooms[room].status);
         }
-        console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has JOINED to the room: " + roomGame);
 
         // Iniciar temporizador para la sala que acaba de iniciar una partida
-        if (enableClock) {
+        if (enableClock && data.game_mode == "Versus")
             interval();
-        }
     });
 
     function interval() {
         intervalObj = setInterval(() => {
-            seconds--;
-            //console.log("room: <" + roomGame + "> time: " + seconds);
+            seconds = seconds - 10;
+            console.log("room: <" + roomGame + "> time: " + seconds);
             io.to(roomGame).emit('clock:update', { time: seconds });
             if (seconds <= 0) {
                 io.to(roomGame).emit('clock:timeOut', { time: seconds });
                 clearInterval(intervalObj);
             }
-        }, 1000);
+        }, 10000); // cada 10 segundos para reducir carga al server
     }
 
     // el jugador sale de una sala de juego...
@@ -233,9 +255,8 @@ io.on('connection', (socket) => {
 
             // salir de la sala
             socket.leave(roomGame);
-
+            io.to(roomGame).emit('game:players_queue', { n_queue_players: statusRoom.length });
             console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has LEFT the room: " + roomGame);
-
             roomGame = "";
             players[thisPlayerId].roomGame = "";
         }
