@@ -95,6 +95,10 @@ if (roomsCount == 0) {
             id_room: idRoom,
             game_mode: "",
             limit: 0,
+            id_team_1: "",
+            id_team_2: "",
+            id_team_3: "",
+            id_team_4: "",
             status: "available" // [available, queue, lock] | disponible, en cola y bloqueada 
         }
         rooms[idRoom] = room;
@@ -106,6 +110,7 @@ if (roomsCount == 0) {
 io.on('connection', (socket) => {
     playersCount++;
     var roomGame = ""; // almacena la sala actual en la que se encuentra el jugador
+    var room_team = ""; // almacena el id de la sala del equipo actual del jugador
     var enableClock = false; // controla si es posible activar el reloj de partida
     var seconds = 0; // tiempo máximo que puede durar la partida
     var intervalObj; // controla el intervalo de tiempo que envia informacion del reloj a una partida
@@ -140,14 +145,46 @@ io.on('connection', (socket) => {
                 console.log(rooms[r].status + " | " + rooms[r].game_mode);
                 // verificar que la sala este en cola y en el modo de juego elegido por el jugador
                 if (rooms[r].status == "queue" && rooms[r].game_mode == data.game_mode && rooms[r].limit == (data.n_players * 2)) {
-                    banRoom = true;
-                    if (rooms[r].game_mode == "Versus") {
-                        seconds = 220; // 3 minutos y 40 segundos... (10 seg para preparar el reloj)
-                        enableClock = true; // para habilitar el temporizador en el juego
-                    }
+                    // Si es una partida con equipos...
+                    if (data.n_players > 1) {
+                        if (data.p_room != "") { // si ya tiene aliados
+                            // rooms[r].id_team_1 = data.p_room;
+                            // Para los jugadores que ya tienen equipo, solo el lider pasaria por este metodo
+                            // el resto de aliados unidos al grupo se unirian directamente a la sala mediante un
+                            // metodo rapido...
+                        } else {
+                            if (rooms[r].id_team_1 == "") // si no esta definido el team 1, lo crea
+                                room_team = rooms[r].id_team_1 = shortid.generate();
+                            else if (rooms[r].id_team_2 == "") // si no esta definido el team 2, lo crea
+                                room_team = rooms[r].id_team_2 = shortid.generate();
+                            else {
+                                const auxTeam1 = io.sockets.adapter.rooms[rooms[r].id_team_1];
+                                if (auxTeam1) { // ver si el equipo esta creado
+                                    if (auxTeam1.length < data.n_players) // ver si el equipo no esta lleno
+                                        room_team = rooms[r].id_team_1;
+                                    else { // si el equipo esta lleno se pregunta por el segundo equipo
+                                        const auxTeam2 = io.sockets.adapter.rooms[rooms[r].id_team_2];
+                                        if (auxTeam2) {
+                                            if (auxTeam2.length < data.n_players) // si no esta lleno
+                                                room_team = rooms[r].id_team_2;
+                                            else // si está lleno, avanz a comprobar la sig sala.
+                                                continue;
+                                        } else
+                                            room_team = rooms[r].id_team_2 = shortid.generate();
+                                    }
+                                } else
+                                    room_team = rooms[r].id_team_1 = shortid.generate();
+                            }
 
-                    socket.join(rooms[r].id_room); // unirse a esta sala
+                            socket.join(room_team); // unirse a esta sala para ir a un equipo
+                            console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has JOINED to the room [TEAM]: " + room_team);
+                            io.to(room_team).emit('game:room_team', { room_team: room_team });
+                        }
+                    }
+                    banRoom = true;
+
                     roomGame = rooms[r].id_room;
+                    socket.join(roomGame); // unirse a esta sala
                     players[thisPlayerId].roomGame = roomGame;
                     io.to(roomGame).emit('game:players_queue', { n_queue_players: roomExist.length });
                     console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has JOINED 2 to the room: " + rooms[r].id_room + " | game_mode: " + rooms[r].game_mode + " | limit: " + rooms[r].limit + " | status: " + rooms[r].status);
@@ -155,6 +192,10 @@ io.on('connection', (socket) => {
                     // mantener al cliente en cola, hasta cumplir la condición
                     const statusRoom = io.sockets.adapter.rooms[r];
                     if (statusRoom.length == rooms[r].limit) {
+                        if (rooms[r].game_mode == "Versus") {
+                            seconds = 220; // 3 minutos y 40 segundos... (10 seg para preparar el reloj)
+                            enableClock = true; // para habilitar el temporizador en el juego
+                        }
                         rooms[r].status = "lock";
                         io.to(roomGame).emit('game:start', { message: 'OK' });
                     } else
@@ -189,6 +230,22 @@ io.on('connection', (socket) => {
                     var lim = 2;
                     if (data.game_mode == "Versus")
                         rooms[r].limit = data.n_players * 2;
+                    // ESTE BLOQUE DEBERIA SER REUTILIZABLE ...
+                    if (data.n_players > 1) {
+                        if (data.p_room != "") { // si ya tiene aliados
+                            rooms[r].id_team_1 = data.p_room;
+                            // posiblemente aqui deberia devolver el estado de la sala para que los jugadores aliados
+                            // tenga info de la sala a la que deben conectarse todos... 
+                        } else {
+                            rooms[r].id_team_1 = shortid.generate();
+                            room_team = rooms[r].id_team_1;
+                            socket.join(room_team); // unirse a esta sala para el primer equipo
+                            console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has JOINED to the room [TEAM]: " + room_team);
+                            io.to(room_team).emit('game:room_team', { room_team: room_team });
+
+                        }
+                    }
+
                     rooms[r].status = "queue"; // cambiar el estado de la sala de "disponible" a "en cola"
                     rooms[r].game_mode = data.game_mode;
                     banRoom = true;
@@ -210,11 +267,26 @@ io.on('connection', (socket) => {
             var lim = 2;
             if (data.game_mode == "Versus")
                 lim = data.n_players * 2;
+            // ESTE BLOQUE DEBERIA SER REUTILIZABLE ...
+            if (data.n_players > 1) {
+                if (data.p_room != "") { // si ya tiene aliados
+                    rooms[r].id_team_1 = data.p_room;
+                    // posiblemente aqui deberia devolver el estado de la sala para que los jugadores aliados
+                    // tenga info de la sala a la que deben conectarse todos... 
+                } else {
+                    rooms[r].id_team_1 = shortid.generate();
+                    socket.join(rooms[r].id_team_1); // unirse a esta sala para el primer equipo
+                    room_team = rooms[r].id_team_1;
+                    console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has JOINED to the room [TEAM]: " + room_team);
+                    io.to(room_team).emit('game:room_team', { room_team: room_team });
+                }
+            }
             var room = { id_room: idRoom, game_mode: data.game_mode, limit: lim, status: "queue" }
             rooms[idRoom] = room;
 
             socket.join(idRoom); // unirse a esta sala
             roomGame = idRoom;
+            players[thisPlayerId].roomGame = roomGame;
             roomsCount++;
             io.to(roomGame).emit('game:players_queue', { n_queue_players: roomExist.length });
             console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has CREATED to the room: " + rooms[room].id_room + " | game_mode: " + rooms[room].game_mode + " | limit: " + rooms[room].limit + " | status: " + rooms[room].status);
@@ -259,6 +331,12 @@ io.on('connection', (socket) => {
             console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has LEFT the room: " + roomGame);
             roomGame = "";
             players[thisPlayerId].roomGame = "";
+
+            // salir de sala de equipo (de terner uno)
+            if (room_team != "") {
+                socket.leave(room_team);
+                room_team = "";
+            }
         }
     });
 
@@ -380,6 +458,26 @@ io.on('connection', (socket) => {
         socket.in(roomGame).broadcast.emit('player:respawn', data);
     });
 
+    // almacenar en tiempo real los estados de las partidas jugadas
+    socket.on('player:status_game', async function(data) {
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            switch (data.status_game_vs) {
+                case "Victory":
+                    p.total_wins++;
+                    break;
+                case "Defeat":
+                    p.total_losses++;
+                    break;
+                case "Draw":
+                    p.total_draws++;
+                    break;
+            }
+            p.updated_at = Date.now();
+            await p.save();
+        }
+    });
+
     // almacenar en tiempo real la experiencia del jugador
     socket.on('player:save_XP', async function(data) {
         const p = await Player.findById(data.id_database);
@@ -430,9 +528,7 @@ io.on('connection', (socket) => {
                 p.claim_award3 = data.claim_award;
                 break;
             case 4:
-                p.claim_award1 = data.claim_award;
-                p.claim_award2 = data.claim_award;
-                p.claim_award3 = data.claim_award;
+                p.claim_award1 = p.claim_award2 = p.claim_award3 = data.claim_award;
                 break;
         }
         p.updated_at = Date.now();
@@ -552,6 +648,11 @@ io.on('connection', (socket) => {
             socket.in(roomGame).broadcast.emit("player:leavedGame", { id: thisPlayerId });
             console.log("<" + thisPlayerId + "><" + players[thisPlayerId].username + "> has LEFT the room: " + roomGame);
             roomGame = "";
+        }
+        // salir de sala de equipo (de terner uno)
+        if (room_team != "") {
+            socket.leave(room_team);
+            room_team = "";
         }
         // almacenar el estado de desconectado al jugador
         await Player.findOneAndUpdate({ username: players[thisPlayerId].username }, { status_player: "offline" });
