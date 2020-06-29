@@ -434,7 +434,7 @@ io.on('connection', (socket) => {
 
     // notificar y muestra a los jugadores del jugador que ha muerto
     socket.on('player:dead', async function(data) {
-        console.log("info kill = ", data);
+        //console.log("info kill to room <" + roomGame + "> = ", data);
         io.to(roomGame).emit('player:dead', data);
 
         const p = await Player.findById(data.id_database);
