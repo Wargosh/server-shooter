@@ -432,6 +432,11 @@ io.on('connection', (socket) => {
         io.to(roomGame).emit('player:shoot', data);
     });
 
+    // actualiza si el jugador pone una mina
+    socket.on('player:mine', function(data) {
+        io.to(roomGame).emit('player:mine', data);
+    });
+
     // notificar y muestra a los jugadores del jugador que ha muerto
     socket.on('player:dead', async function(data) {
         //console.log("info kill to room <" + roomGame + "> = ", data);
