@@ -483,6 +483,50 @@ io.on('connection', (socket) => {
         }
     });
 
+    // almacenar en tiempo real los estados de las partidas jugadas
+    socket.on('player:status_mission', async function(data) {
+        const p = await Player.findById(data.id_database);
+        if (p) {
+            switch (data.mission_id) {
+                case "MSD001":
+                    p.msd001_status = data.mission_status;
+                    p.msd001_value = data.mission_value;
+                    break;
+                case "MSD002":
+                    p.msd002_status = data.mission_status;
+                    p.msd002_value = data.mission_value;
+                    break;
+                case "MSD003":
+                    p.msd003_status = data.mission_status;
+                    p.msd003_value = data.mission_value;
+                    break;
+                case "MSD004":
+                    p.msd004_status = data.mission_status;
+                    p.msd004_value = data.mission_value;
+                    break;
+                case "MSD005":
+                    p.msd005_status = data.mission_status;
+                    p.msd005_value = data.mission_value;
+                    break;
+                case "RESET":
+                    p.msd001_status = "Incomplete";
+                    p.msd001_value = 0;
+                    p.msd002_status = "Incomplete";
+                    p.msd002_value = 0;
+                    p.msd003_status = "Incomplete";
+                    p.msd003_value = 0;
+                    p.msd004_status = "Incomplete";
+                    p.msd004_value = 0;
+                    p.msd005_status = "Incomplete";
+                    p.msd005_value = 0;
+                    break;
+            }
+            p.updated_at = Date.now();
+            p.last_date_mission_daily = Date.now();
+            await p.save();
+        }
+    });
+
     // almacenar en tiempo real la experiencia del jugador
     socket.on('player:save_XP', async function(data) {
         const p = await Player.findById(data.id_database);
