@@ -56,6 +56,18 @@ const PlayerSchema = new Schema({
     powerup_level_speed: { type: Number, default: 1 }, // nivel mejora de powerup 2
     powerup_level_damage: { type: Number, default: 1 }, // nivel mejora de powerup 3
     powerup_level_repair: { type: Number, default: 1 }, // nivel mejora de powerup 4
+    // Información de las misiones
+    last_date_mission_daily: { type: Date, default: Date.now }, // obtiene la ultima fechahora de realizar una mision diaria, para poder restablecer
+    msd001_status: { type: String, default: 'Incomplete' },
+    msd001_value: { type: Number, default: 0 },
+    msd002_status: { type: String, default: 'Incomplete' },
+    msd002_value: { type: Number, default: 0 },
+    msd003_status: { type: String, default: 'Incomplete' },
+    msd003_value: { type: Number, default: 0 },
+    msd004_status: { type: String, default: 'Incomplete' },
+    msd004_value: { type: Number, default: 0 },
+    msd005_status: { type: String, default: 'Incomplete' },
+    msd005_value: { type: Number, default: 0 },
     // Información del estado de la cuenta, etc
     status_player: { type: String, default: 'offline' },
     status_account: { type: String, default: 'active' },
