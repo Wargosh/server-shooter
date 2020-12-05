@@ -68,6 +68,8 @@ const PlayerSchema = new Schema({
     msd004_value: { type: Number, default: 0 },
     msd005_status: { type: String, default: 'Incomplete' },
     msd005_value: { type: Number, default: 0 },
+    msw001_status: { type: String, default: 'Incomplete' },
+    msw001_value: { type: Number, default: 0 },
     // Información del estado de la cuenta, etc
     status_player: { type: String, default: 'offline' },
     status_account: { type: String, default: 'active' },
